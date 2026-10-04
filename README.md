@@ -1,4 +1,4 @@
-# Subscriptions
+# Billcycle
 
 **Recurring payments on Stellar, without handing anyone your keys.**
 
