@@ -63,6 +63,12 @@ stellar contract deploy --wasm target/wasm32v1-none/release/subscriptions.wasm \
 A minimal keeper is a cron job that calls `is_due` and then `charge` for
 each active subscription id. Index ids from the `("sub","started")` events.
 
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [Running a keeper](docs/running-a-keeper.md)
+- [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md) · [Changelog](CHANGELOG.md)
+
 ## Glossary (new to Stellar?)
 
 - **Allowance**: permission you give a contract to move up to a set
