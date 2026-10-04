@@ -63,6 +63,28 @@ stellar contract deploy --wasm target/wasm32v1-none/release/subscriptions.wasm \
 A minimal keeper is a cron job that calls `is_due` and then `charge` for
 each active subscription id. Index ids from the `("sub","started")` events.
 
+## Web app
+
+![Billcycle web app](docs/assets/web-app.png)
+
+A subscriptions app for both sides of the contract, at `web/`:
+
+- **Browse plans**: every active plan with price and period. Subscribe in two steps: approve a spending cap (N periods, with a matching expiry), then subscribe and pay the first period.
+- **My subscriptions**: status (active, past due, cancelled), next charge date and periods paid, with cancel and "charge now" when due. Any address can be looked up read-only.
+- **For merchants**: publish a plan (any asset; hourly, weekly, monthly or yearly), see subscribers per plan, and deactivate a plan.
+- Live stats in the header: plans, active subscriptions and monthly XLM volume.
+
+```bash
+cd web
+npm install
+npm run dev        # http://localhost:5173
+```
+
+It talks to the contract deployed on **Stellar testnet** and signs with
+[Freighter](https://www.freighter.app) (switch it to Testnet). Point it at
+another deployment with `VITE_CONTRACT_ID` (see `web/.env.example`).
+`netlify.toml` at the repo root deploys it as-is.
+
 ## Documentation
 
 - [Architecture](docs/architecture.md)
