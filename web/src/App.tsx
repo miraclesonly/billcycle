@@ -41,7 +41,7 @@ export default function App() {
       <header className="bg-night text-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
           <div className="flex items-center gap-2.5">
-            <img src="/favicon.svg" className="h-8 w-8" alt="" />
+            <img src={`${import.meta.env.BASE_URL}favicon.svg`} className="h-8 w-8" alt="" />
             <span className="text-lg font-extrabold tracking-tight">billcycle</span>
           </div>
           {wallet.address ? (
