@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #f4f7f5;
+  --color-card: #ffffff;
+  --color-ink: #0f1d17;
+  --color-sub: #5b6b63;
+  --color-line: #dfe7e2;
+  --color-mint: #0e9f6e;
+  --color-mint-soft: #e3f6ee;
+  --color-night: #0b2a20;
+  --color-amber: #c97a10;
+  --color-rose: #c0392b;
+  --font-sans: "Manrope", system-ui, sans-serif;
+}
+body { background: var(--color-bg); color: var(--color-ink); font-family: var(--font-sans); }
+.card { background: var(--color-card); border: 1px solid var(--color-line); border-radius: 18px; }
+.inp { width: 100%; border: 1px solid var(--color-line); border-radius: 12px; padding: .65rem .85rem; font-size: .9rem; background: #fff; }
+.inp:focus { outline: 2px solid var(--color-mint); outline-offset: 0; }
+.btn { border-radius: 12px; padding: .6rem 1.1rem; font-weight: 700; font-size: .85rem; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-mint { background: var(--color-mint); color: #fff; }
+.btn-night { background: var(--color-night); color: #e9fff6; }
+.btn-soft { background: var(--color-mint-soft); color: var(--color-night); }
+.btn-out { border: 1px solid var(--color-line); background: #fff; }
+.chip { border-radius: 999px; padding: .15rem .6rem; font-size: .7rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
