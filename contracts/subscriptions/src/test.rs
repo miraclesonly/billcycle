@@ -236,3 +236,45 @@ fn unknown_ids_are_reported() {
         Err(Ok(Error::PlanNotFound))
     );
 }
+
+#[test]
+fn one_live_subscription_per_plan_and_wallet() {
+    let s = setup();
+    allow(&s, 12);
+    let first = s.subs.subscribe(&s.customer, &s.plan_id);
+    assert_eq!(
+        s.subs.try_subscribe(&s.customer, &s.plan_id),
+        Err(Ok(Error::AlreadySubscribed))
+    );
+    // After cancelling, subscribing again is fine.
+    s.subs.cancel(&s.customer, &first);
+    let second = s.subs.subscribe(&s.customer, &s.plan_id);
+    assert_ne!(first, second);
+    assert_eq!(s.subs.subscription_count(), 2);
+    assert_eq!(s.subs.plan_count(), 1);
+}
+
+#[test]
+fn deactivated_plans_can_be_reopened() {
+    let s = setup();
+    allow(&s, 12);
+    let sub_id = s.subs.subscribe(&s.customer, &s.plan_id);
+    s.subs.deactivate_plan(&s.plan_id);
+    advance(&s, MONTH);
+    assert_eq!(s.subs.try_charge(&sub_id), Err(Ok(Error::PlanInactive)));
+
+    s.subs.activate_plan(&s.plan_id);
+    assert!(s.subs.charge(&sub_id));
+}
+
+#[test]
+fn repeated_failed_charges_stay_quiet() {
+    use soroban_sdk::testutils::Events as _;
+    let s = setup();
+    allow(&s, 1);
+    let sub_id = s.subs.subscribe(&s.customer, &s.plan_id);
+    advance(&s, MONTH);
+    assert!(!s.subs.charge(&sub_id)); // marks past due, emits PastDue
+    assert!(!s.subs.charge(&sub_id)); // already past due: no event
+    assert_eq!(s.env.events().all().events().len(), 0);
+}

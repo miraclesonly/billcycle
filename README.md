@@ -38,7 +38,8 @@ either   ── cancel(subscription_id) ─────────────�
 | --- | --- | --- |
 | `create_plan(merchant, token, price, period)` | merchant | `period` ≥ 1 hour |
 | `deactivate_plan(plan_id)` | merchant | No new subscribers, no further charges |
-| `subscribe(subscriber, plan_id)` | subscriber | Charges the first period; needs an allowance ≥ price |
+| `activate_plan(plan_id)` | merchant | Reopens a deactivated plan |
+| `subscribe(subscriber, plan_id)` | subscriber | Charges the first period; needs an allowance ≥ price. One live subscription per wallet and plan |
 | `charge(subscription_id)` | anyone | Returns `true` if paid, `false` if marked PastDue |
 | `cancel(caller, subscription_id)` | subscriber or merchant | |
 | `is_due`, `get_plan`, `get_subscription` | anyone | Read state |
@@ -54,7 +55,7 @@ Events: `("sub","plan")`, `("sub","started", plan_id)`,
 
 ```bash
 cd contracts
-cargo test              # 11 unit tests
+cargo test              # 14 unit tests
 stellar contract build
 stellar contract deploy --wasm target/wasm32v1-none/release/subscriptions.wasm \
   --source me --network testnet
@@ -63,9 +64,23 @@ stellar contract deploy --wasm target/wasm32v1-none/release/subscriptions.wasm \
 A minimal keeper is a cron job that calls `is_due` and then `charge` for
 each active subscription id. Index ids from the `("sub","started")` events.
 
+## Running charges (keeper)
+
+Charges happen when someone calls `charge`. `scripts/keeper.sh` checks every
+subscription and charges the ones that are due. Run it from cron with any funded key:
+
+```bash
+scripts/keeper.sh <CONTRACT_ID> keeper --network testnet --dry-run   # list what's due
+scripts/keeper.sh <CONTRACT_ID> keeper --network testnet             # charge them
+```
+
 ## Web app
 
 ![Billcycle web app](docs/assets/web-app.png)
+
+The site has three pages: **Home** (what it does, with live testnet data), **App** (the tool itself) and **Docs** (getting started, concepts, reference and FAQ).
+
+![billcycle app page](docs/assets/web-app-page.png)
 
 A subscriptions app for both sides of the contract, at `web/`:
 
