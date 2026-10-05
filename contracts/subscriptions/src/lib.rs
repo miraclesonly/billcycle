@@ -61,6 +61,8 @@ pub enum DataKey {
     NextSubId,
     Plan(u64),
     Sub(u64),
+    /// The subscriber's current (not cancelled) subscription to a plan.
+    Active(u64, Address),
 }
 
 #[contracterror]
@@ -76,11 +78,24 @@ pub enum Error {
     NotMerchant = 7,
     NotSubscriber = 8,
     InitialPaymentFailed = 9,
+    AlreadySubscribed = 10,
 }
 
 #[contractevent(topics = ["sub", "plan"], data_format = "single-value")]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PlanCreated {
+    pub plan_id: u64,
+}
+
+#[contractevent(topics = ["sub", "plan_off"], data_format = "single-value")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PlanDeactivated {
+    pub plan_id: u64,
+}
+
+#[contractevent(topics = ["sub", "plan_on"], data_format = "single-value")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PlanActivated {
     pub plan_id: u64,
 }
 
@@ -155,6 +170,17 @@ impl Subscriptions {
         plan.merchant.require_auth();
         plan.active = false;
         save_plan(&env, &plan);
+        PlanDeactivated { plan_id }.publish(&env);
+        Ok(())
+    }
+
+    /// Reopen a deactivated plan: new subscriptions and charges resume.
+    pub fn activate_plan(env: Env, plan_id: u64) -> Result<(), Error> {
+        let mut plan = Self::get_plan(env.clone(), plan_id)?;
+        plan.merchant.require_auth();
+        plan.active = true;
+        save_plan(&env, &plan);
+        PlanActivated { plan_id }.publish(&env);
         Ok(())
     }
 
@@ -166,6 +192,12 @@ impl Subscriptions {
         let plan = Self::get_plan(env.clone(), plan_id)?;
         if !plan.active {
             return Err(Error::PlanInactive);
+        }
+        let active_key = DataKey::Active(plan_id, subscriber.clone());
+        if let Some(existing) = env.storage().persistent().get::<_, u64>(&active_key) {
+            if Self::get_subscription(env.clone(), existing)?.status != SubStatus::Cancelled {
+                return Err(Error::AlreadySubscribed);
+            }
         }
         if !pull(&env, &plan, &subscriber) {
             return Err(Error::InitialPaymentFailed);
@@ -182,6 +214,10 @@ impl Subscriptions {
             status: SubStatus::Active,
         };
         save_sub(&env, &sub);
+        env.storage().persistent().set(&active_key, &id);
+        env.storage()
+            .persistent()
+            .extend_ttl(&active_key, BUMP_THRESHOLD, BUMP_TO);
         Subscribed {
             plan_id,
             subscription_id: id,
@@ -215,6 +251,10 @@ impl Subscriptions {
         }
 
         if !pull(&env, &plan, &sub.subscriber) {
+            // Already past due: nothing changed, so don't write or re-announce it.
+            if sub.status == SubStatus::PastDue {
+                return Ok(false);
+            }
             sub.status = SubStatus::PastDue;
             save_sub(&env, &sub);
             PastDue { subscription_id }.publish(&env);
@@ -250,6 +290,9 @@ impl Subscriptions {
         }
         sub.status = SubStatus::Cancelled;
         save_sub(&env, &sub);
+        env.storage()
+            .persistent()
+            .remove(&DataKey::Active(sub.plan_id, sub.subscriber.clone()));
         SubCancelled { subscription_id }.publish(&env);
         Ok(())
     }
@@ -257,6 +300,22 @@ impl Subscriptions {
     pub fn is_due(env: Env, subscription_id: u64) -> Result<bool, Error> {
         let sub = Self::get_subscription(env.clone(), subscription_id)?;
         Ok(sub.status != SubStatus::Cancelled && env.ledger().timestamp() >= sub.next_charge_at)
+    }
+
+    /// Number of plans ever created; ids run from 1 to this value.
+    pub fn plan_count(env: Env) -> u64 {
+        env.storage()
+            .instance()
+            .get(&DataKey::NextPlanId)
+            .unwrap_or(0)
+    }
+
+    /// Number of subscriptions ever created; ids run from 1 to this value.
+    pub fn subscription_count(env: Env) -> u64 {
+        env.storage()
+            .instance()
+            .get(&DataKey::NextSubId)
+            .unwrap_or(0)
     }
 
     pub fn get_plan(env: Env, plan_id: u64) -> Result<Plan, Error> {
