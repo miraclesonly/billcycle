@@ -77,11 +77,11 @@ export function Workspace({ wallet }: { wallet: Wallet }) {
         </div>
       </div>
 
-      <main className="mx-auto max-w-6xl px-5 py-8">
+      <div className="mx-auto max-w-6xl px-5 py-8">
         {tab === "plans" && <PlansView plans={plans} wallet={wallet} onChange={refresh} />}
         {tab === "mine" && <MineView plans={plans ?? []} subs={subs} wallet={wallet} onChange={refresh} />}
         {tab === "merchant" && <MerchantView plans={plans ?? []} subs={subs ?? []} wallet={wallet} onChange={refresh} />}
-      </main>
+      </div>
 
     </div>
   );

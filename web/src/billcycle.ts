@@ -55,12 +55,7 @@ const COUNTERS: Record<string, string> = { get_plan: "plan_count", get_subscript
  */
 export async function scan<T>(method: string, batch = 10): Promise<T[]> {
   const out: T[] = [];
-  let count: number | null = null;
-  try {
-    count = Number(await billcycle.read<bigint>(COUNTERS[method]));
-  } catch {
-    count = null;
-  }
+  const count = await billcycle.read<bigint>(COUNTERS[method]).then(Number, () => null);
   if (count !== null) {
     for (let start = 1; start <= count; start += batch) {
       const ids = Array.from({ length: Math.min(batch, count - start + 1) }, (_, i) => start + i);
