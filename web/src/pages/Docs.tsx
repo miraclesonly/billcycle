@@ -1,6 +1,7 @@
 import { CONTRACT_ID } from "../billcycle";
 import { contractLink } from "../lib/stellar";
-import { Link, useTitle } from "../lib/router";
+import { useEffect } from "react";
+import { Link, useSection, useTitle } from "../lib/router";
 
 const SECTIONS = [
   ["start", "Getting started"],
@@ -11,23 +12,19 @@ const SECTIONS = [
 
 export function Docs() {
   useTitle("Docs · billcycle");
+  const section = useSection();
+  useEffect(() => {
+    if (section) document.getElementById(section)?.scrollIntoView({ behavior: "smooth" });
+  }, [section]);
   return (
     <div className="mx-auto grid max-w-6xl gap-12 px-5 py-14 lg:grid-cols-[210px_1fr]">
       <aside className="hidden lg:block">
         <nav className="sticky top-24 space-y-1 text-sm">
           <p className="mb-3 px-3 text-xs font-extrabold uppercase tracking-[0.18em] text-mint">On this page</p>
           {SECTIONS.map(([id, label]) => (
-            <a
-              key={id}
-              href="#/docs"
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-              }}
-              className="block rounded-lg px-3 py-2 text-sub hover:bg-card hover:text-ink"
-            >
+            <Link key={id} to={`/docs/${id}`} className="block rounded-lg px-3 py-2 text-sub hover:bg-card hover:text-ink">
               {label}
-            </a>
+            </Link>
           ))}
         </nav>
       </aside>
@@ -119,7 +116,7 @@ const START: string[] = [
 const CONCEPTS: [string, string][] = [
   [
     "Plan",
-    "Merchant, token, price and period. Deactivating a plan stops new sign-ups; existing subscriptions keep running."
+    "Merchant, token, price and period. Deactivating a plan stops new sign-ups and further charges until the merchant reactivates it."
   ],
   [
     "Subscription",
@@ -144,7 +141,12 @@ const REFERENCE: [string, string, string][] = [
   [
     "deactivate_plan(plan_id)",
     "merchant",
-    "Stops new subscriptions to a plan"
+    "Pauses a plan: no new subscribers and no further charges"
+  ],
+  [
+    "activate_plan(plan_id)",
+    "merchant",
+    "Reopens a deactivated plan"
   ],
   [
     "subscribe(subscriber, plan_id)",
@@ -167,7 +169,7 @@ const REFERENCE: [string, string, string][] = [
     "Whether a charge can run now"
   ],
   [
-    "get_plan · get_subscription",
+    "get_plan · get_subscription · plan_count · subscription_count",
     "—",
     "Read state"
   ]

@@ -47,9 +47,29 @@ export function periodLabel(p: bigint | number): string {
   return n % 86400 === 0 ? `Every ${n / 86400} days` : `Every ${Math.round(n / 3600)}h`;
 }
 
-export async function scan<T>(method: string, max = 80): Promise<T[]> {
+const COUNTERS: Record<string, string> = { get_plan: "plan_count", get_subscription: "subscription_count" };
+
+/**
+ * Load every plan or subscription. Uses the contract's counter and parallel
+ * batches when available; older deployments fall back to probing ids.
+ */
+export async function scan<T>(method: string, batch = 10): Promise<T[]> {
   const out: T[] = [];
-  for (let id = 1; id <= max; id++) {
+  let count: number | null = null;
+  try {
+    count = Number(await billcycle.read<bigint>(COUNTERS[method]));
+  } catch {
+    count = null;
+  }
+  if (count !== null) {
+    for (let start = 1; start <= count; start += batch) {
+      const ids = Array.from({ length: Math.min(batch, count - start + 1) }, (_, i) => start + i);
+      const got = await Promise.allSettled(ids.map((id) => billcycle.read<T>(method, [u64(id)])));
+      for (const r of got) if (r.status === "fulfilled") out.push(r.value);
+    }
+    return out;
+  }
+  for (let id = 1; ; id++) {
     try {
       out.push(await billcycle.read<T>(method, [u64(id)]));
     } catch {

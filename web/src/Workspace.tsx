@@ -50,7 +50,7 @@ export function Workspace({ wallet }: { wallet: Wallet }) {
             {[
               ["Plans", plans?.length ?? "…"],
               ["Active subs", subs ? stats.active : "…"],
-              ["Monthly volume", plans && subs ? `${fromUnits(stats.mrr)} XLM` : "…"],
+              ["Monthly XLM volume", plans && subs ? `${fromUnits(stats.mrr)} XLM` : "…"],
             ].map(([k, v]) => (
               <div key={String(k)} className="rounded-2xl bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-wider text-white/50">{k}</p>
